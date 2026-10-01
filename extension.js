@@ -68,9 +68,12 @@ export default class TypingPetExtension extends Extension {
             this._actor.ease({ opacity: 255, duration: 120 });
         });
 
-        // Global input capture. This is the load-bearing assumption we are testing.
+        // Pointer events only (drag). Key events cannot be observed from the
+        // Shell on Wayland, so those arrive from the evdev helper instead.
         this._stageId = global.stage.connect('captured-event',
             this._onCapturedEvent.bind(this));
+
+        this._startInput();
 
         // Physics ticker for the bounce.
         this._tickId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 16,
@@ -83,6 +86,7 @@ export default class TypingPetExtension extends Extension {
         if (this._idleId) { GLib.source_remove(this._idleId); this._idleId = 0; }
         if (this._tickId) { GLib.source_remove(this._tickId); this._tickId = 0; }
         if (this._stageId) { global.stage.disconnect(this._stageId); this._stageId = 0; }
+        this._stopInput();
         if (this._monitorsChangedId) {
             Main.layoutManager.disconnect(this._monitorsChangedId);
             this._monitorsChangedId = 0;
@@ -124,13 +128,70 @@ export default class TypingPetExtension extends Extension {
             this._icon.gicon = gicon;
     }
 
+    _startInput() {
+        const helper = GLib.build_filenamev(
+            [this._extDir(), 'bin', 'typingpet-input.js']);
+
+        try {
+            this._inputProc = Gio.Subprocess.new(
+                ['gjs', '-m', helper],
+                Gio.SubprocessFlags.STDOUT_PIPE |
+                Gio.SubprocessFlags.STDERR_SILENCE);
+        } catch (e) {
+            logError(e, '[typingpet] failed to start input helper');
+            this._inputProc = null;
+            return;
+        }
+
+        this._inputStream = new Gio.DataInputStream({
+            base_stream: this._inputProc.get_stdout_pipe(),
+        });
+        this._readInputLine();
+    }
+
+    _readInputLine() {
+        if (!this._inputStream)
+            return;
+
+        this._inputStream.read_line_async(GLib.PRIORITY_DEFAULT, null,
+            (stream, res) => {
+                let line = null;
+                try {
+                    [line] = stream.read_line_finish_utf8(res);
+                } catch {
+                    return; // helper exited
+                }
+
+                if (line === null)
+                    return; // EOF
+
+                this._handleInputLine(line);
+                this._readInputLine();
+            });
+    }
+
+    _handleInputLine(line) {
+        if (line.startsWith('KEY ')) {
+            this._onKey(parseInt(line.slice(4), 10));
+        } else if (line.startsWith('ERR ')) {
+            log(`[typingpet] input helper: ${line.slice(4)}`);
+        }
+    }
+
+    _stopInput() {
+        this._inputStream = null;
+        if (this._inputProc) {
+            try {
+                this._inputProc.force_exit();
+            } catch {
+                // already gone
+            }
+            this._inputProc = null;
+        }
+    }
+
     _onCapturedEvent(_stage, event) {
         const type = event.type();
-
-        if (type === Clutter.EventType.KEY_PRESS) {
-            this._onKey();
-            return Clutter.EVENT_PROPAGATE;
-        }
 
         // While dragging, follow the pointer globally.
         if (this._drag) {
@@ -159,8 +220,10 @@ export default class TypingPetExtension extends Extension {
         return Clutter.EVENT_STOP;
     }
 
-    _onKey() {
+    _onKey(_code) {
         this._keyCount++;
+        if (this._keyCount === 1)
+            log('[typingpet] first key captured');
         if (this._debug)
             this._debug.text = `keys: ${this._keyCount}`;
 

@@ -29,6 +29,7 @@ rm -rf "$EXT_DIR"
 mkdir -p "$EXT_DIR"
 cp "$ROOT/metadata.json" "$ROOT/extension.js" "$EXT_DIR/"
 cp -r "$ROOT/assets" "$EXT_DIR/assets"
+cp -r "$ROOT/bin" "$EXT_DIR/bin"
 
 echo "Extension staged at: $EXT_DIR"
 echo "Log: $LOG"

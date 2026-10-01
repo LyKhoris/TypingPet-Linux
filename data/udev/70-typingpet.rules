@@ -1,0 +1,16 @@
+# Typing Pet — grant read-only access to keyboard input devices.
+#
+# GNOME Shell cannot see global keystrokes on Wayland, so Typing Pet reads
+# key events from /dev/input/event* (read-only). This rule grants a dedicated
+# "typingpet" group access to *keyboard* devices only — never mice, touchpads
+# or other input devices.
+#
+# Install with:  ./dev/install-input-access.sh
+# Or manually:
+#   sudo groupadd -f typingpet
+#   sudo install -m 0644 data/udev/70-typingpet.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload
+#   sudo udevadm trigger --subsystem-match=input --action=change
+#   sudo usermod -aG typingpet "$USER"      # then log out and back in
+
+SUBSYSTEM=="input", KERNEL=="event*", ENV{ID_INPUT_KEYBOARD}=="1", GROUP="typingpet", MODE="0640"
