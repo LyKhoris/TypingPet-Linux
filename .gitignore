@@ -1,0 +1,13 @@
+# GNOME Shell extension build artifacts
+*.compiled
+*.gschema.xml.compiled
+gschemas.compiled
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Node (if tooling is added later)
+node_modules/
