@@ -11,3 +11,6 @@ gschemas.compiled
 
 # Node (if tooling is added later)
 node_modules/
+
+# Local nested-shell dev sandbox
+.dev/

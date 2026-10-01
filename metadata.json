@@ -1,0 +1,9 @@
+{
+  "uuid": "typingpet@lykhoris.github.io",
+  "name": "Typing Pet",
+  "description": "A desktop pet that bounces and reacts to your typing. Unofficial Linux/GNOME reimplementation of Typing Pet by swoonqx.",
+  "shell-version": ["50"],
+  "url": "https://github.com/LyKhoris/TypingPet-Linux",
+  "version": 1,
+  "version-name": "0.1.0"
+}
