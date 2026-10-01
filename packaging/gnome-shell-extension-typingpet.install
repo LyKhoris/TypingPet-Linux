@@ -1,0 +1,27 @@
+post_install() {
+    # Re-apply the udev rule so the current session gets access immediately
+    # (uaccess grants the active user, so no re-login is needed).
+    if command -v udevadm >/dev/null; then
+        udevadm control --reload || true
+        udevadm trigger --subsystem-match=input --action=change || true
+    fi
+
+    cat <<'EOF'
+Typing Pet installed.
+
+Enable it in the Extensions app (or run: gnome-extensions enable
+typingpet@lykhoris.github.io). If the pet does not react to typing, log out
+and back in once, or run: udevadm trigger --subsystem-match=input --action=change
+EOF
+}
+
+post_upgrade() {
+    post_install
+}
+
+post_remove() {
+    if command -v udevadm >/dev/null; then
+        udevadm control --reload || true
+        udevadm trigger --subsystem-match=input --action=change || true
+    fi
+}

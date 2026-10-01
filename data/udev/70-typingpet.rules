@@ -1,16 +1,27 @@
-# Typing Pet — grant read-only access to keyboard input devices.
+# Typing Pet — grant the active user read-only access to keyboard devices.
 #
-# GNOME Shell cannot see global keystrokes on Wayland, so Typing Pet reads
-# key events from /dev/input/event* (read-only). This rule grants a dedicated
-# "typingpet" group access to *keyboard* devices only — never mice, touchpads
-# or other input devices.
+# GNOME Shell cannot observe global keystrokes on Wayland, so Typing Pet reads
+# key events straight from /dev/input/event* — read-only, keycodes only, never
+# text. This rule is what grants that access.
 #
-# Install with:  ./dev/install-input-access.sh
-# Or manually:
-#   sudo groupadd -f typingpet
-#   sudo install -m 0644 data/udev/70-typingpet.rules /etc/udev/rules.d/
-#   sudo udevadm control --reload
-#   sudo udevadm trigger --subsystem-match=input --action=change
-#   sudo usermod -aG typingpet "$USER"      # then log out and back in
+# TAG+="uaccess" lets systemd-logind grant a dynamic ACL to the user of the
+# *active* session. It needs no group, no per-user configuration and no
+# re-login, and the access is revoked when the session ends. systemd already
+# uses this mechanism for joysticks (see /usr/lib/udev/rules.d/70-uaccess.rules).
+#
+# Scope is deliberately narrow:
+#   - keyboards only (ID_INPUT_KEYBOARD) — never mice, touchpads or gamepads
+#   - read-only; Typing Pet never writes to input devices
+#
+# NOTE ON TRADE-OFFS: the Arch Wiki advises against uaccess on input devices,
+# because a user able to read them could keylog. That capability is inherent to
+# this application (as it is to every Linux typing-sound tool); there is no
+# Wayland API that grants "typing happened" without it. We apply the tag
+# deliberately and narrowly instead of adding the user to the broad `input`
+# group. Delete this file (and reload udev) to revoke access entirely.
+#
+# Installed by the package to /usr/lib/udev/rules.d/. Manual install:
+#   sudo install -m644 70-typingpet.rules /usr/lib/udev/rules.d/
+#   sudo udevadm control --reload && sudo udevadm trigger --subsystem-match=input
 
-SUBSYSTEM=="input", KERNEL=="event*", ENV{ID_INPUT_KEYBOARD}=="1", GROUP="typingpet", MODE="0640"
+SUBSYSTEM=="input", KERNEL=="event*", ENV{ID_INPUT_KEYBOARD}=="1", TAG+="uaccess"

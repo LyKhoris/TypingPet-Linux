@@ -14,3 +14,11 @@ node_modules/
 
 # Local nested-shell dev sandbox
 .dev/
+
+# Packaging output
+dist/
+build/
+pkg/
+*.pkg.tar.zst
+*.deb
+*.rpm

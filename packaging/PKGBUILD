@@ -1,0 +1,28 @@
+# Maintainer: LyKhoris <https://github.com/LyKhoris>
+pkgname=gnome-shell-extension-typingpet
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="A GNOME Shell desktop pet that bounces and reacts to your typing"
+arch=('any')
+url="https://github.com/LyKhoris/TypingPet-Linux"
+license=('GPL-2.0-or-later')
+depends=('gnome-shell' 'gjs')
+install="$pkgname.install"
+options=('!strip')
+
+# Update sha256sums after tagging a release.
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+_uuid="typingpet@lykhoris.github.io"
+
+package() {
+    local extdir="$pkgdir/usr/share/gnome-shell/extensions/$_uuid"
+
+    install -d "$extdir"
+    install -m644 metadata.json extension.js "$extdir/"
+    cp -r assets bin "$extdir/"
+
+    install -Dm644 data/udev/70-typingpet.rules \
+        "$pkgdir/usr/lib/udev/rules.d/70-typingpet.rules"
+}

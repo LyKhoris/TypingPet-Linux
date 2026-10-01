@@ -4,6 +4,7 @@ import Gio from 'gi://Gio';
 import St from 'gi://St';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as MessageTray from 'resource:///org/gnome/shell/ui/messageTray.js';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 
 const PET_SIZE = 160;
@@ -21,6 +22,7 @@ export default class TypingPetExtension extends Extension {
         this._last = 0;
         this._idleId = 0;
         this._drag = null;
+        this._permissionNotified = false;
 
         const asset = (name) =>
             Gio.FileIcon.new(Gio.File.new_for_path(
@@ -91,6 +93,7 @@ export default class TypingPetExtension extends Extension {
             Main.layoutManager.disconnect(this._monitorsChangedId);
             this._monitorsChangedId = 0;
         }
+        if (this._noticeSource) { this._noticeSource.destroy(); this._noticeSource = null; }
         if (this._debug) { this._debug.destroy(); this._debug = null; }
         if (this._actor) { this._actor.destroy(); this._actor = null; }
         this._drag = null;
@@ -174,7 +177,38 @@ export default class TypingPetExtension extends Extension {
         if (line.startsWith('KEY ')) {
             this._onKey(parseInt(line.slice(4), 10));
         } else if (line.startsWith('ERR ')) {
-            log(`[typingpet] input helper: ${line.slice(4)}`);
+            this._notifyPermission(line.slice(4));
+        }
+    }
+
+    // Shown when the extension was installed without the keyboard-access rule
+    // (the extensions.gnome.org case). GNOME Shell cannot grant this itself, so
+    // the user needs the package or the rule installed.
+    _notifyPermission(reason) {
+        log(`[typingpet] keyboard access unavailable (${reason})`);
+        if (this._permissionNotified)
+            return;
+        this._permissionNotified = true;
+
+        try {
+            const source = new MessageTray.Source({
+                title: 'Typing Pet',
+                iconName: 'input-keyboard-symbolic',
+            });
+            Main.messageTray.add(source);
+
+            source.addNotification(new MessageTray.Notification({
+                source,
+                title: 'Typing Pet needs keyboard access',
+                body: 'The pet can’t react to your typing yet. Install the ' +
+                    'Typing Pet package to grant read-only keyboard access. ' +
+                    'Only the fact that a key was pressed is ever used — ' +
+                    'never the text.',
+            }));
+
+            this._noticeSource = source;
+        } catch (e) {
+            logError(e, '[typingpet] failed to show permission notice');
         }
     }
 
