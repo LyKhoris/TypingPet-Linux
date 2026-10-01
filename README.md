@@ -54,5 +54,9 @@ The extension is built as a GNOME Shell extension:
 
 ## License
 
-To be decided. The original **Typing Pet** by swoonqx is the inspiration for
-this project; see the Credits section above.
+Licensed under the **GNU General Public License v2.0 or later**
+(`SPDX-License-Identifier: GPL-2.0-or-later`). See [`LICENSE`](LICENSE).
+
+This license covers this project's own code only. The original **Typing Pet**
+by swoonqx is a separate work with its own terms (it is not open source); see
+the Credits section above.
